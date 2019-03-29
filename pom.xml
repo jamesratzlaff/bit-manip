@@ -7,13 +7,13 @@
 	<version>2019.03.28</version>
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Library for bitwise manipulations in arrays</description>
-	
+
 	<properties>
 		<maven.compiler.source>1.9</maven.compiler.source>
 		<maven.compiler.target>1.9</maven.compiler.target>
 		<maven.compiler.release>9</maven.compiler.release>
 	</properties>
-	
+
 
 	<dependencies>
 		<dependency>
@@ -22,7 +22,69 @@
 			<version>2019.03.28</version>
 		</dependency>
 	</dependencies>
-
-
-
+	<licenses>
+		<license>
+			<name>MIT License</name>
+			<url>http://www.opensource.org/licenses/mit-license.php</url>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<name>James Ratzlaff</name>
+			<email>jamesratzlaff@gmail.com</email>
+			<url>https://github.com/jamesratzlaff</url>
+		</developer>
+	</developers>
+	<scm>
+		<connection>scm:git:git://github.com/jamesratzlaff/bit-manip.git</connection>
+		<developerConnection>scm:git:ssh://github.com:jamesratzlaff/bit-manip.git</developerConnection>
+		<url>http://github.com/jamesratzlaffbit-manip/tree/master</url>
+	</scm>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.0</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.6</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

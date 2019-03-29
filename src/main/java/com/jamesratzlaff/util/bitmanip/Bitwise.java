@@ -3,15 +3,28 @@
  */
 package com.jamesratzlaff.util.bitmanip;
 
+import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.IntBinaryOp.ADD;
+import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.IntBinaryOp.GT;
+import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.IntBinaryOp.LSH;
+import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.IntBinaryOp.LT;
+import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.IntBinaryOp.SUB;
+import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.IntBinaryOp.URSH;
+
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntBinaryOperator;
+import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas;
+import com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.forType.byteArray;
+import com.jamesratzlaff.util.function.ByteBinaryOperator;
 import com.jamesratzlaff.util.function.ObjIntByteConsumer;
 import com.jamesratzlaff.util.function.ObjIntToByteBiFunction;
 
@@ -21,42 +34,207 @@ import com.jamesratzlaff.util.function.ObjIntToByteBiFunction;
  */
 public class Bitwise {
 
-	public static final class Constants {
-		private static final class Lambdas {
-			private static final class ofType {
-				private static final class IntBinOp {
-					private static final IntBinaryOperator aLessThanB = (a, b) -> a < b ? 1 : 0;
-					private static final IntBinaryOperator aGreaterThanB = (a, b) -> a > b ? 1 : 0;
-					private static final IntBinaryOperator unsignedRightShift = (a, b) -> a >>> b;
-					private static final IntBinaryOperator leftShift = (a, b) -> a << b;
-					private static final IntBinaryOperator add = (a, b) -> a + b;
-					private static final IntBinaryOperator sub = (a, b) -> a - b;
-				}
+	private abstract static class CyclicBytesOperator<T> {
+		private final ToIntFunction<T> lengthGetter;
+		private final ObjIntToByteBiFunction<T> getAtIndex;
+
+		protected CyclicBytesOperator(ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex) {
+			this.lengthGetter = lengthGetter;
+			this.getAtIndex = getAtIndex;
+		}
+
+		protected ToIntFunction<T> lengthGetter() {
+			return lengthGetter;
+		}
+
+		protected ObjIntToByteBiFunction<T> getAtIndex() {
+			return getAtIndex;
+		}
+	}
+
+	public static class CyclicReadBuffer<T> {
+		private final T bytes;
+		private final CyclicReadBufferController<T> controller;
+
+		
+		
+		
+		public CyclicReadBuffer(T bytes, CyclicReadBufferController<T> controller) {
+			this.bytes = bytes;
+			this.controller = controller;
+		}
+
+		public CyclicReadBuffer(T bytes, ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex) {
+			this(bytes, new CyclicReadBufferController<>(lengthGetter, getAtIndex));
+		}
+
+		public byte get(long index) {
+			return controller.get(bytes, index);
+		}
+
+		public byte get() {
+			return controller.get(bytes);
+		}
+
+		public byte next() {
+			byte b = controller.next(bytes);
+			print((byte[]) bytes, (int) controller.location());
+			return b;
+		}
+
+		public byte previous() {
+
+			byte b = controller.previous(bytes);
+			print((byte[]) bytes, (int) controller.location());
+			return b;
+		}
+
+		public boolean hasNext() {
+			return controller.hasNext();
+		}
+
+		public int actualSize() {
+			return controller.actualSize(bytes);
+		}
+		
+		public byte[] applyOperation(ByteBinaryOperator op, byte...opend) {
+			return applyOperation(opend, byteArray.lengthGetter, byteArray.getAtIndex, byteArray.setAtIndex, op);
+		}
+		public byte[] applyOperation(IntBinaryOperator op, byte...opend) {
+			return applyOperation(opend, byteArray.lengthGetter, byteArray.getAtIndex, byteArray.setAtIndex, op);
+		}
+		public ByteBuffer applyOperation(ByteBinaryOperator op, ByteBuffer opend) {
+			return applyOperation(opend, ByteBuffer::limit, ByteBuffer::get, ByteBuffer::put, op);
+		}
+		public ByteBuffer applyOperation(IntBinaryOperator op, ByteBuffer opend) {
+			return applyOperation(opend, ByteBuffer::limit, ByteBuffer::get, ByteBuffer::put, op);
+		}
+		
+		public <U> U applyOperation(U opend, ToIntFunction<U> lengthGetter, ObjIntToByteBiFunction<U> getAtIndex, ObjIntByteConsumer<U> setAtIndex,ByteBinaryOperator op) {
+			int len = lengthGetter.applyAsInt(opend);
+			for(int i=0;i<len;i++) {
+				byte a = getAtIndex.applyAsByte(opend, i);
+				byte b = next();
+				byte result = op.applyAsByte(a, b);
+				setAtIndex.accept(opend,i, (byte)result);
+			}
+			return opend;
+			
+		}
+		
+		public <U> U applyOperation(U opend, ToIntFunction<U> lengthGetter, ObjIntToByteBiFunction<U> getAtIndex, ObjIntByteConsumer<U> setAtIndex,IntBinaryOperator op) {
+			int len = lengthGetter.applyAsInt(opend);
+			for(int i=0;i<len;i++) {
+				int a = Byte.toUnsignedInt(getAtIndex.applyAsByte(opend, i));
+				int b = Byte.toUnsignedInt(next());
+				int result = op.applyAsInt(a, b);
+				setAtIndex.accept(opend,i, (byte)result);
+			}
+			return opend;
+		}
+
+		public IntStream stream() {
+			return IntStream.generate(this::next);
+		}
+
+		public static class from {
+			public static final CyclicReadBuffer<byte[]> byteArray(byte[] bytes) {
+				return new CyclicReadBuffer<byte[]>(bytes, Lambdas.forType.byteArray.lengthGetter, Lambdas.forType.byteArray.getAtIndex);
 			}
 
-			private static final class forType {
-				private static final class byteArray {
-					private static final ToIntFunction<byte[]> lengthGetter = bytes -> bytes.length;
-					private static final ObjIntToByteBiFunction<byte[]> getAtIndex = (bytes, i) -> bytes[i];
-					private static final ObjIntByteConsumer<byte[]> setAtIndex = (bytes, i, b) -> bytes[i] = b;
-				}
+			public static final CyclicReadBuffer<ByteBuffer> ByteBuffer(ByteBuffer bytes) {
+				return new CyclicReadBuffer<ByteBuffer>(bytes, ByteBuffer::limit, ByteBuffer::get);
 			}
+		}
+	}
+
+	static class CyclicReadBufferController<T> extends CyclicBytesOperator<T> implements Cloneable {
+		// TODO: maybe use an atomic long
+		private int location = 0;
+
+		public CyclicReadBufferController(ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex) {
+			super(lengthGetter, getAtIndex);
+		}
+
+		int location() {
+			return location;
+		}
+
+		public byte get(T bytes, long index) {
+			int realLoc = getRealLocation(index, lengthGetter().applyAsInt(bytes));
+			return getAtIndex().applyAsByte(bytes, realLoc);
+		}
+
+		protected int actualSize(T bytes) {
+			return lengthGetter().applyAsInt(bytes);
+		}
+
+		public byte next(T bytes) {
+			byte b = get(bytes);
+			location += 1;
+			if (location >= lengthGetter().applyAsInt(bytes)) {
+				location = 0;
+			}
+			return b;
+		}
+
+		public byte previous(T bytes) {
+
+			location -= 1;
+			if (location < 0) {
+				location = lengthGetter().applyAsInt(bytes) - 1;
+			}
+			return get(bytes);
+		}
+
+		private static int getRealLocation(long value, int len) {
+			if (value < len && value > 0) {
+				return (int) value;
+			}
+			long reso = 0;
+
+			reso = value % Integer.toUnsignedLong(len);
+			if (reso < 0) {
+				reso = Integer.toUnsignedLong(len) - reso;
+			}
+			int result = (int) reso;
+			if (result < 0) {
+				throw new IllegalStateException(String.format("The resolved location (%s) should be a positive number, but it is not.  The arguments given are (value=%s,len=%s)", result, value, len));
+			}
+			return result;
+		}
+
+		public byte get(T bytes) {
+			return getAtIndex().applyAsByte(bytes, location);
+		}
+
+		public boolean hasNext() {
+			return true;
+		}
+
+		public CyclicReadBufferController<T> clone() {
+			return new CyclicReadBufferController<>(lengthGetter(), getAtIndex());
 		}
 
 	}
+	
+	
 
-	public static class CyclicShifter<T> {
-		private final ToIntFunction<T> lengthGetter;
-		private final ObjIntToByteBiFunction<T> getAtIndex;
+	/**
+	 * 
+	 * @author James Ratzlaff
+	 *
+	 * @param <T> the type of object that has a length or size property, returns a byte value based on an index, and can store a value given an index
+	 */
+	public static class CyclicShifter<T> extends CyclicBytesOperator<T> {
 		private final ObjIntByteConsumer<T> setAtIndex;
 
 		public CyclicShifter(ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex) {
-			List<String> nullParams = getNullParams(new LinkedHashMap<String, Object>(Map.of("lengthGetter", lengthGetter, "getAtIndex", getAtIndex, "setAtIndex", setAtIndex)));
+			super(lengthGetter, getAtIndex);
+			List<String> nullParams = getNullParams(new LinkedHashMap<String, Object>(Map.of("lengthGetter", lengthGetter(), "getAtIndex", getAtIndex(), "setAtIndex", setAtIndex)));
 			if (!nullParams.isEmpty()) {
 				throw new IllegalArgumentException(String.join(", ", nullParams) + " cannot be null");
 			}
-			this.lengthGetter = lengthGetter;
-			this.getAtIndex = getAtIndex;
 			this.setAtIndex = setAtIndex;
 		}
 
@@ -135,7 +313,7 @@ public class Bitwise {
 		 */
 		public void cyclicShift(T bytes, int amount, int from, int to) {
 
-			int bytesLength = bytes != null ? lengthGetter.applyAsInt(bytes) : 0;
+			int bytesLength = bytes != null ? lengthGetter().applyAsInt(bytes) : 0;
 			if (amount != 0 && bytesLength > 0) {
 				final int dataWidth = Byte.SIZE;
 				final int startIdx = Math.max(Math.min(from, to), 0);
@@ -143,9 +321,9 @@ public class Bitwise {
 				final int numberOfBytes = (endIdx - startIdx);
 				if (numberOfBytes > 0) {
 					amount = amount % (numberOfBytes * dataWidth);
-					final IntBinaryOperator preLoopOp = amount < 0 ? Constants.Lambdas.ofType.IntBinOp.add : Constants.Lambdas.ofType.IntBinOp.sub;
+					final IntBinaryOperator preLoopOp = amount<0 ? ADD : SUB;
 					if (Math.abs(amount) > dataWidth) {
-						final int chunkAmount = amount<0?-dataWidth:dataWidth;
+						final int chunkAmount = amount<0 ? -dataWidth : dataWidth;
 						while (Math.abs(amount) > dataWidth) {
 							cyclicShift(bytes, chunkAmount, startIdx, endIdx);
 							amount = preLoopOp.applyAsInt(amount, dataWidth);
@@ -158,21 +336,21 @@ public class Bitwise {
 					final boolean iteratesForward = direction == 1;
 					final int carryMask = iteratesForward ? ((1 << (amount)) - 1) : (((byte) -127) >> amount);
 					final int backShift = (dataWidth - amount);
-					final IntBinaryOperator backShiftOp = iteratesForward ? Constants.Lambdas.ofType.IntBinOp.leftShift : Constants.Lambdas.ofType.IntBinOp.unsignedRightShift;
-					final IntBinaryOperator shiftOp = iteratesForward ? Constants.Lambdas.ofType.IntBinOp.unsignedRightShift : Constants.Lambdas.ofType.IntBinOp.leftShift;
+					final IntBinaryOperator backShiftOp = iteratesForward ? LSH : URSH;
+					final IntBinaryOperator shiftOp = iteratesForward ? URSH : LSH;
 					int previousCarry = 0;
-					final IntBinaryOperator endCondition = iteratesForward ? Constants.Lambdas.ofType.IntBinOp.aLessThanB : Constants.Lambdas.ofType.IntBinOp.aGreaterThanB;
+					final IntBinaryOperator endCondition = iteratesForward ? LT : GT;
 					for (int i = start; endCondition.applyAsInt(i, end) == 1; i += direction) {
 						previousCarry = manipulateBytesAndGetCarry(bytes, amount, backShift, previousCarry, i, carryMask, backShiftOp, shiftOp);
 					}
-					setAtIndex.accept(bytes, start, (byte) (getAtIndex.applyAsByte(bytes, start) | previousCarry));
+					setAtIndex.accept(bytes, start, (byte) (getAtIndex().applyAsByte(bytes, start) | previousCarry));
 				}
 			}
 		}
 
 		private final int manipulateBytesAndGetCarry(final T bytes, int amount, final int backShift, int previousCarry, final int i, final int carryMask,
 				final IntBinaryOperator backShiftOp, final IntBinaryOperator shiftOp) {
-			int current = Byte.toUnsignedInt(getAtIndex.applyAsByte(bytes, i));
+			int current = Byte.toUnsignedInt(getAtIndex().applyAsByte(bytes, i));
 			int carry = (current & carryMask);
 			carry = backShiftOp.applyAsInt(carry, backShift) & 0xFF;
 			current = shiftOp.applyAsInt(current, amount) & 0xFF;
@@ -184,11 +362,27 @@ public class Bitwise {
 			return map.keySet().stream().filter(key -> map.get(key) == null).collect(Collectors.toList());
 		}
 
-		public static final class ofType {
-			public static final CyclicShifter<byte[]> byteArray = new CyclicShifter<byte[]>(Constants.Lambdas.forType.byteArray.lengthGetter, Constants.Lambdas.forType.byteArray.getAtIndex, Constants.Lambdas.forType.byteArray.setAtIndex);
-			public static final CyclicShifter<ByteBuffer> ByteBuffer = new CyclicShifter<ByteBuffer>(java.nio.ByteBuffer::limit, java.nio.ByteBuffer::get, java.nio.ByteBuffer::put);
+		public static final class Using {
+			public static final CyclicShifter<byte[]> aByteArray = new CyclicShifter<byte[]>(byteArray.lengthGetter, byteArray.getAtIndex, byteArray.setAtIndex);
+			public static final CyclicShifter<ByteBuffer> aByteBuffer = new CyclicShifter<ByteBuffer>(ByteBuffer::limit, ByteBuffer::get, ByteBuffer::put);
 		}
 
+	}
+	
+	public static class Util {
+
+		public static byte[] doOperation(byte[] opend, IntBinaryOperator op, byte...operand) {
+			return CyclicReadBuffer.from.byteArray(operand).applyOperation(op, opend);
+		}
+		public static byte[] doOperation(byte[] opend, IntBinaryOperator op, ByteBuffer operand) {
+			return CyclicReadBuffer.from.ByteBuffer(operand).applyOperation(op, opend);
+		}
+		public static ByteBuffer doOperation(ByteBuffer opend, IntBinaryOperator op, ByteBuffer operand) {
+			return CyclicReadBuffer.from.ByteBuffer(operand).applyOperation(opend, ByteBuffer::limit,ByteBuffer::get,ByteBuffer::put, op);
+		}
+		public static ByteBuffer doOperation(ByteBuffer opend, IntBinaryOperator op, byte[] operand) {
+			return CyclicReadBuffer.from.byteArray(operand).applyOperation(opend, ByteBuffer::limit,ByteBuffer::get,ByteBuffer::put, op);
+		}
 	}
 
 	private static final int[] toIntArray(byte[] bytes) {
@@ -222,27 +416,76 @@ public class Bitwise {
 	}
 
 	public static String toBinaryString(byte[] bytes) {
-		return String.join("", Arrays.stream(toIntArray(bytes)).mapToObj(Bitwise::asByteBinary).collect(Collectors.toList()));
+		return String.join("", toStringList(bytes, Bitwise::asByteBinary));
+	}
+
+	public static List<String> toStringList(byte[] bytes, IntFunction<String> mapper) {
+		return Arrays.stream(toIntArray(bytes)).mapToObj(mapper).collect(Collectors.toList());
+	}
+
+	public static List<String> createPointers(List<String> other, int index) {
+		List<String> result = new ArrayList<String>(other.size());
+		for (int i = 0; i < other.size(); i++) {
+			String current = other.get(i);
+			char[] aCarr = current.toCharArray();
+			Arrays.fill(aCarr, i == index ? '^' : ' ');
+			result.add(new String(aCarr));
+		}
+		return result;
+	}
+
+	public static void print(byte[] bytes, int index) {
+		System.out.println(index);
+		System.out.println(createPointedString(bytes, index));
+	}
+
+	public static String createPointedString(byte[] bytes, int index) {
+		return createPointedString(bytes, index, "");
+	}
+	
+
+	public static String createPointedString(byte[] bytes, int index, String delim) {
+		List<String> asList = toStringList(bytes, Bitwise::asByteBinary);
+		List<String> ptrs = createPointers(asList, index);
+		char[] bdelim = delim.toCharArray();
+		Arrays.fill(bdelim, ' ');
+		String odelim = new String(bdelim);
+		String m = String.join(delim, asList);
+		String n = String.join(odelim, ptrs);
+		return m + "\n" + n;
 	}
 
 	public static void main(String[] args) {
 		byte[] bytes = new byte[] { (byte) 0x81, 24, 7 };
-		System.out.println("shifted 0:  "+toBinaryString(bytes));
+		System.out.println("shifted 0:  " + toBinaryString(bytes));
 		System.out.println("shifting 1, 9 times");
 		for (int i = 0; i < 9; i++) {
-			CyclicShifter.ofType.byteArray.cyclicShift(bytes, 1);
-			System.out.println("shifted 1:  "+toBinaryString(bytes));
+			CyclicShifter.Using.aByteArray.cyclicShift(bytes, 1);
+			System.out.println("shifted 1:  " + toBinaryString(bytes));
 		}
 		System.out.println("shifting -9, 1 time");
-		CyclicShifter.ofType.byteArray.cyclicShift(bytes, -9);
-		System.out.println("shifted -9: "+toBinaryString(bytes));
+		CyclicShifter.Using.aByteArray.cyclicShift(bytes, -9);
+		System.out.println("shifted -9: " + toBinaryString(bytes));
 		System.out.println("shifting 9, 1 time");
-		System.out.println("shifted 9:  "+toBinaryString(CyclicShifter.ofType.byteArray.cyclicShiftAndReturnBytes(bytes, 9)));
+		System.out.println("shifted 9:  " + toBinaryString(CyclicShifter.Using.aByteArray.cyclicShiftAndReturnBytes(bytes, 9)));
 		System.out.println("shifting -1, 9 times");
 		for (int i = 0; i < 9; i++) {
-			CyclicShifter.ofType.byteArray.cyclicShift(bytes, -1);
-			System.out.println("shifted -1: "+toBinaryString(bytes));
+			CyclicShifter.Using.aByteArray.cyclicShift(bytes, -1);
+			System.out.println("shifted -1: " + toBinaryString(bytes));
 		}
+		CyclicReadBuffer<byte[]> readBuff = CyclicReadBuffer.from.byteArray(bytes);
+		for (int i = 0; i < 7; i++) {
+
+			readBuff.next();
+		}
+
+		bytes = new byte[] { (byte) 0x81, 24, 7 };
+		System.err.println(toBinaryString(bytes));
+		for (int i = 0; i < 13; i++) {
+			System.out.println(readBuff.previous());
+		}
+		Util.doOperation(bytes, (a, b)->(a^b),(byte)255,(byte)0);
+		System.err.println(toBinaryString(bytes));
 	}
 
 }
