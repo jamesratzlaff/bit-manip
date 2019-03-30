@@ -7,7 +7,7 @@ import java.util.function.IntBinaryOperator;
 import java.util.function.ToIntFunction;
 
 import com.jamesratzlaff.util.function.ObjIntByteConsumer;
-import com.jamesratzlaff.util.function.ObjIntToByteBiFunction;
+import com.jamesratzlaff.util.function.ObjIntToByteFunction;
 
 /**
  * @author James Ratzlaff
@@ -42,7 +42,7 @@ public class Lambdas {
 	public static final class forType {
 		public static final class byteArray {
 			public static final ToIntFunction<byte[]> lengthGetter = bytes -> bytes.length;
-			public static final ObjIntToByteBiFunction<byte[]> getAtIndex = (bytes, i) -> bytes[i];
+			public static final ObjIntToByteFunction<byte[]> getAtIndex = (bytes, i) -> bytes[i];
 			public static final ObjIntByteConsumer<byte[]> setAtIndex = (bytes, i, b) -> bytes[i] = b;
 		}
 	}

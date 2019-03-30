@@ -26,7 +26,7 @@ import com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas;
 import com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.forType.byteArray;
 import com.jamesratzlaff.util.function.ByteBinaryOperator;
 import com.jamesratzlaff.util.function.ObjIntByteConsumer;
-import com.jamesratzlaff.util.function.ObjIntToByteBiFunction;
+import com.jamesratzlaff.util.function.ObjIntToByteFunction;
 
 /**
  * @author James Ratzlaff
@@ -36,9 +36,9 @@ public class Bitwise {
 
 	private abstract static class CyclicBytesOperator<T> {
 		private final ToIntFunction<T> lengthGetter;
-		private final ObjIntToByteBiFunction<T> getAtIndex;
+		private final ObjIntToByteFunction<T> getAtIndex;
 
-		protected CyclicBytesOperator(ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex) {
+		protected CyclicBytesOperator(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex) {
 			this.lengthGetter = lengthGetter;
 			this.getAtIndex = getAtIndex;
 		}
@@ -47,7 +47,7 @@ public class Bitwise {
 			return lengthGetter;
 		}
 
-		protected ObjIntToByteBiFunction<T> getAtIndex() {
+		protected ObjIntToByteFunction<T> getAtIndex() {
 			return getAtIndex;
 		}
 	}
@@ -64,7 +64,7 @@ public class Bitwise {
 			this.controller = controller;
 		}
 
-		public CyclicReadBuffer(T bytes, ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex) {
+		public CyclicReadBuffer(T bytes, ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex) {
 			this(bytes, new CyclicReadBufferController<>(lengthGetter, getAtIndex));
 		}
 
@@ -110,7 +110,7 @@ public class Bitwise {
 			return applyOperation(opend, ByteBuffer::limit, ByteBuffer::get, ByteBuffer::put, op);
 		}
 		
-		public <U> U applyOperation(U opend, ToIntFunction<U> lengthGetter, ObjIntToByteBiFunction<U> getAtIndex, ObjIntByteConsumer<U> setAtIndex,ByteBinaryOperator op) {
+		public <U> U applyOperation(U opend, ToIntFunction<U> lengthGetter, ObjIntToByteFunction<U> getAtIndex, ObjIntByteConsumer<U> setAtIndex,ByteBinaryOperator op) {
 			int len = lengthGetter.applyAsInt(opend);
 			for(int i=0;i<len;i++) {
 				byte a = getAtIndex.applyAsByte(opend, i);
@@ -122,7 +122,7 @@ public class Bitwise {
 			
 		}
 		
-		public <U> U applyOperation(U opend, ToIntFunction<U> lengthGetter, ObjIntToByteBiFunction<U> getAtIndex, ObjIntByteConsumer<U> setAtIndex,IntBinaryOperator op) {
+		public <U> U applyOperation(U opend, ToIntFunction<U> lengthGetter, ObjIntToByteFunction<U> getAtIndex, ObjIntByteConsumer<U> setAtIndex,IntBinaryOperator op) {
 			int len = lengthGetter.applyAsInt(opend);
 			for(int i=0;i<len;i++) {
 				int a = Byte.toUnsignedInt(getAtIndex.applyAsByte(opend, i));
@@ -152,7 +152,7 @@ public class Bitwise {
 		// TODO: maybe use an atomic long
 		private int location = 0;
 
-		public CyclicReadBufferController(ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex) {
+		public CyclicReadBufferController(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex) {
 			super(lengthGetter, getAtIndex);
 		}
 
@@ -229,7 +229,7 @@ public class Bitwise {
 	public static class CyclicShifter<T> extends CyclicBytesOperator<T> {
 		private final ObjIntByteConsumer<T> setAtIndex;
 
-		public CyclicShifter(ToIntFunction<T> lengthGetter, ObjIntToByteBiFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex) {
+		public CyclicShifter(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex) {
 			super(lengthGetter, getAtIndex);
 			List<String> nullParams = getNullParams(new LinkedHashMap<String, Object>(Map.of("lengthGetter", lengthGetter(), "getAtIndex", getAtIndex(), "setAtIndex", setAtIndex)));
 			if (!nullParams.isEmpty()) {
@@ -239,12 +239,11 @@ public class Bitwise {
 		}
 
 		/**
-		 * @param <T>    T Convenience method for calling {@link #cyclicShiftAndReturnBytes(Object, int, int)
+		 * Convenience method for calling {@link #cyclicShiftAndReturnBytes(Object, int, int)
 		 *               cyclicShiftAndReturnBytes(bytes, amount, from)} using 0 as the value for {@code from}
 		 * @param bytes  the bytes in which the bits are to be shifted
 		 * @param amount the number of shifts to occur. If amount is less than 0 then a left cyclic shift will be executed,
 		 *               other wise a right cyclic shift will be executed.
-		 * @param from   the inclusive starting index of bytes to be shifted
 		 * 
 		 * @return the given {@code bytes} argument
 		 */
@@ -254,10 +253,10 @@ public class Bitwise {
 
 		/**
 		 * 
-		 * @param <T>    T
-		 * @param bytes
-		 * @param amount
-		 * @param from
+		 * @param bytes the bytes in which the bits are to be shifted
+		 * @param amount the number of shifts to occur. If amount is less than 0 then a left cyclic shift will be executed,
+		 *               other wise a right cyclic shift will be executed.
+		 * @param from the inclusive starting index of bytes to be shifted
 		 * @return the given {@code bytes} argument
 		 */
 		public T cyclicShiftAndReturnBytes(T bytes, int amount, int from) {
@@ -265,7 +264,6 @@ public class Bitwise {
 		}
 
 		/**
-		 * @param <T>    T
 		 * @param bytes  the bytes in which the bits are to be shifted
 		 * @param amount the number of shifts to occur. If amount is less than 0 then a left cyclic shift will be executed,
 		 *               other wise a right cyclic shift will be executed.
@@ -279,12 +277,12 @@ public class Bitwise {
 		}
 
 		/**
-		 * @param <T>    Convenience method for calling {@link #cyclicShift(Object, int, int) cyclicShift(bytes, amount, from)}
+		 *     Convenience method for calling {@link #cyclicShift(Object, int, int) cyclicShift(bytes, amount, from)}
 		 *               using 0 as the value for {@code from}
 		 * @param bytes  the bytes in which the bits are to be shifted
 		 * @param amount the number of shifts to occur. If amount is less than 0 then a left cyclic shift will be executed,
 		 *               other wise a right cyclic shift will be executed.
-		 * @param from   the inclusive starting index of bytes to be shifted
+		 *
 		 */
 		public void cyclicShift(T bytes, int amount) {
 			cyclicShift(bytes, amount, 0);
