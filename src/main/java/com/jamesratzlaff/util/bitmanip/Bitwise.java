@@ -454,7 +454,7 @@ public class Bitwise {
 	}
 
 	public static void main(String[] args) {
-		byte[] bytes = new byte[] { (byte) 0x81, 24, 7 };
+		byte[] bytes = new byte[] { (byte) 0b10000001, 0b00011000, 0b00000111 };
 		System.out.println("shifted 0:  " + toBinaryString(bytes));
 		System.out.println("shifting 1, 9 times");
 		for (int i = 0; i < 9; i++) {

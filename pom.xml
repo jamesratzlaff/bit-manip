@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.jamesratzlaff</groupId>
 	<artifactId>bit-manip</artifactId>
-	<version>2019.03.30</version>
+	<version>2019.04.01</version>
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Library for bitwise manipulations in arrays</description>
 
@@ -19,7 +19,7 @@
 		<dependency>
 			<groupId>com.jamesratzlaff</groupId>
 			<artifactId>byte-functions</artifactId>
-			<version>2019.03.30</version>
+			<version>2019.04.01</version>
 		</dependency>
 	</dependencies>
 	<licenses>
