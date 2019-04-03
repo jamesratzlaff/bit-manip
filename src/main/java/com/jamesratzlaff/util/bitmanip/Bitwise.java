@@ -453,37 +453,6 @@ public class Bitwise {
 		return m + "\n" + n;
 	}
 
-	public static void main(String[] args) {
-		byte[] bytes = new byte[] { (byte) 0b10000001, 0b00011000, 0b00000111 };
-		System.out.println("shifted 0:  " + toBinaryString(bytes));
-		System.out.println("shifting 1, 9 times");
-		for (int i = 0; i < 9; i++) {
-			CyclicShifter.Using.aByteArray.cyclicShift(bytes, 1);
-			System.out.println("shifted 1:  " + toBinaryString(bytes));
-		}
-		System.out.println("shifting -9, 1 time");
-		CyclicShifter.Using.aByteArray.cyclicShift(bytes, -9);
-		System.out.println("shifted -9: " + toBinaryString(bytes));
-		System.out.println("shifting 9, 1 time");
-		System.out.println("shifted 9:  " + toBinaryString(CyclicShifter.Using.aByteArray.cyclicShiftAndReturnBytes(bytes, 9)));
-		System.out.println("shifting -1, 9 times");
-		for (int i = 0; i < 9; i++) {
-			CyclicShifter.Using.aByteArray.cyclicShift(bytes, -1);
-			System.out.println("shifted -1: " + toBinaryString(bytes));
-		}
-		CyclicReadBuffer<byte[]> readBuff = CyclicReadBuffer.from.byteArray(bytes);
-		for (int i = 0; i < 7; i++) {
 
-			readBuff.next();
-		}
-
-		bytes = new byte[] { (byte) 0x81, 24, 7 };
-		System.err.println(toBinaryString(bytes));
-		for (int i = 0; i < 13; i++) {
-			System.out.println(readBuff.previous());
-		}
-		Util.doOperation(bytes, (a, b)->(a^b),(byte)255,(byte)0);
-		System.err.println(toBinaryString(bytes));
-	}
 
 }
