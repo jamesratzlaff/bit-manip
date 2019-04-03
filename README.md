@@ -1,6 +1,8 @@
 # bit-manip
 Library for bitwise manipulations over arrays
+
 #Examples
+##Cyclic Shifter
 
 ```java
 //Given an array or (buffer) of bytes:
@@ -20,13 +22,12 @@ Bitwise.CyclicShifter.Using.aByteArray(bytes,9);
 There is also the method ``Bitwise.CyclicShifter.Using.aByteBuffer`` implemented for you as well as a generic constructor 
 ``new CyclicShifter<T>(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex)``
 to easily use whatever kind of byte container you please.
-This uses bitwise operations itself to achieve this so it runs pretty darn quick.
+
+At the core all of the shifting and carrying is done using bitwise operators, therefore it runs pretty darn fast. It could be faster using concrete object interaction instead of method references.
 
 
+##Boundless buffer operations
 Another object you may find useful is a ``CyclicByteBuffer`` which can be used to do operations over arrays smaller or larger than itself. A use of this object can be found in the ``Bitwise.Util.doOperation(byte[],IntBinaryOperator,byte...)`` method.
-
-
-Example
 
 ```java
 byte[] bytes =new byte[]{0b10000001,0b00011000,0b00000111};//100000010001100000000111
