@@ -11,13 +11,10 @@ import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.
 import static com.jamesratzlaff.util.bitmanip.internal.constants.Lambdas.ofType.IntBinaryOp.URSH;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntBinaryOperator;
-import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -78,14 +75,11 @@ public class Bitwise {
 
 		public byte next() {
 			byte b = controller.next(bytes);
-			print((byte[]) bytes, (int) controller.location());
 			return b;
 		}
 
 		public byte previous() {
-
 			byte b = controller.previous(bytes);
-			print((byte[]) bytes, (int) controller.location());
 			return b;
 		}
 
@@ -390,77 +384,5 @@ public class Bitwise {
 			return CyclicReadBuffer.from.byteArray(operand).applyOperation(opend, ByteBuffer::limit,ByteBuffer::get,ByteBuffer::put, op);
 		}
 	}
-
-	private static final int[] toIntArray(byte[] bytes) {
-		int[] asInts = new int[bytes.length];
-		for (int i = 0; i < bytes.length; i++) {
-			asInts[i] = Byte.toUnsignedInt(bytes[i]);
-		}
-		return asInts;
-	}
-
-	private static String pad(String str) {
-		int diff = Byte.SIZE - str.length();
-		if (diff > 0) {
-			char[] filler = new char[diff];
-			Arrays.fill(filler, '0');
-			return new StringBuilder(Byte.SIZE).append(filler).append(str).toString();
-		}
-		return str;
-	}
-
-	private static final String asByteBinary(int i) {
-		return pad(Integer.toBinaryString(i));
-	}
-
-	public static String toBinaryString(String label, byte b) {
-		return label + toBinaryString(b);
-	}
-
-	public static String toBinaryString(byte b) {
-		return asByteBinary(Byte.toUnsignedInt(b));
-	}
-
-	public static String toBinaryString(byte[] bytes) {
-		return String.join("", toStringList(bytes, Bitwise::asByteBinary));
-	}
-
-	public static List<String> toStringList(byte[] bytes, IntFunction<String> mapper) {
-		return Arrays.stream(toIntArray(bytes)).mapToObj(mapper).collect(Collectors.toList());
-	}
-
-	public static List<String> createPointers(List<String> other, int index) {
-		List<String> result = new ArrayList<String>(other.size());
-		for (int i = 0; i < other.size(); i++) {
-			String current = other.get(i);
-			char[] aCarr = current.toCharArray();
-			Arrays.fill(aCarr, i == index ? '^' : ' ');
-			result.add(new String(aCarr));
-		}
-		return result;
-	}
-
-	public static void print(byte[] bytes, int index) {
-		System.out.println(index);
-		System.out.println(createPointedString(bytes, index));
-	}
-
-	public static String createPointedString(byte[] bytes, int index) {
-		return createPointedString(bytes, index, "");
-	}
-	
-
-	public static String createPointedString(byte[] bytes, int index, String delim) {
-		List<String> asList = toStringList(bytes, Bitwise::asByteBinary);
-		List<String> ptrs = createPointers(asList, index);
-		char[] bdelim = delim.toCharArray();
-		Arrays.fill(bdelim, ' ');
-		String odelim = new String(bdelim);
-		String m = String.join(delim, asList);
-		String n = String.join(odelim, ptrs);
-		return m + "\n" + n;
-	}
-
-
 
 }
