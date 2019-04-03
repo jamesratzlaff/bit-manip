@@ -229,12 +229,20 @@ public class Bitwise {
 	public static class CyclicShifter<T> extends CyclicBytesOperator<T> {
 		private final ObjIntByteConsumer<T> setAtIndex;
 
-		public CyclicShifter(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex) {
-			super(lengthGetter, getAtIndex);
-			List<String> nullParams = getNullParams(new LinkedHashMap<String, Object>(Map.of("lengthGetter", lengthGetter(), "getAtIndex", getAtIndex(), "setAtIndex", setAtIndex)));
+		private static <T> void checkForNullCtorArgs(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex) {
+			Map<String,Object> mappedArgs = new LinkedHashMap<String,Object>(3);
+			mappedArgs.put("lengthGetter", lengthGetter);
+			mappedArgs.put("getAtIndex", getAtIndex);
+			mappedArgs.put("setAtIndex", setAtIndex);
+			List<String> nullParams = getNullParams(mappedArgs);
 			if (!nullParams.isEmpty()) {
 				throw new IllegalArgumentException(String.join(", ", nullParams) + " cannot be null");
 			}
+		}
+		
+		public CyclicShifter(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex) {
+			super(lengthGetter, getAtIndex);
+			checkForNullCtorArgs(lengthGetter, getAtIndex, setAtIndex);
 			this.setAtIndex = setAtIndex;
 		}
 
