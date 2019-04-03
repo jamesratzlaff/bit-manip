@@ -13,15 +13,6 @@
 		<maven.compiler.target>1.9</maven.compiler.target>
 		<maven.compiler.release>9</maven.compiler.release>
 	</properties>
-
-
-	<dependencies>
-		<dependency>
-			<groupId>com.jamesratzlaff</groupId>
-			<artifactId>byte-functions</artifactId>
-			<version>2019.04.01</version>
-		</dependency>
-	</dependencies>
 	<licenses>
 		<license>
 			<name>MIT License</name>
@@ -40,12 +31,59 @@
 		<developerConnection>scm:git:ssh://github.com:jamesratzlaff/bit-manip.git</developerConnection>
 		<url>http://github.com/jamesratzlaff/bit-manip/tree/master</url>
 	</scm>
+	<dependencies>
+		<dependency>
+			<groupId>com.jamesratzlaff</groupId>
+			<artifactId>byte-functions</artifactId>
+			<version>2019.04.01</version>
+		</dependency>
+	</dependencies>
+		<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.0</version>
+				<executions>
+					<execution>
+						<id>default-compile</id>
+						<configuration>
+							<!-- compile everything to ensure module-info contains right entries -->
+							<release>9</release>
+						</configuration>
+					</execution>
+					<execution>
+						<id>base-compile</id>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<!-- recompile everything for target VM except the module-info.java -->
+						<configuration>
+							<excludes>
+								<exclude>module-info.java</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
+				<!-- defaults for compile and testCompile -->
+				<configuration>
+					<!-- Only required when JAVA_HOME isn't at least Java 9 and when haven't 
+						configured the maven-toolchains-plugin -->
+					<jdkToolchain>
+						<version>9</version>
+					</jdkToolchain>
+					<release>8</release>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
