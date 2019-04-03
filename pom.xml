@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.jamesratzlaff</groupId>
 	<artifactId>bit-manip</artifactId>
-	<version>2019.04.01</version>
+	<version>2019.04.03</version>
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Library for bitwise manipulations in arrays</description>
 
@@ -38,7 +38,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/jamesratzlaff/bit-manip.git</connection>
 		<developerConnection>scm:git:ssh://github.com:jamesratzlaff/bit-manip.git</developerConnection>
-		<url>http://github.com/jamesratzlaffbit-manip/tree/master</url>
+		<url>http://github.com/jamesratzlaff/bit-manip/tree/master</url>
 	</scm>
 	<build>
 		<plugins>
