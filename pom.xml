@@ -7,7 +7,7 @@
 	<version>2019.04.03</version>
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Library for bitwise manipulations in arrays</description>
-
+	<url>https://github.com/jamesratzlaff/bit-manip</url>
 	<properties>
 		<maven.compiler.source>1.9</maven.compiler.source>
 		<maven.compiler.target>1.9</maven.compiler.target>
