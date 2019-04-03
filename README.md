@@ -17,8 +17,12 @@ Bitwise.CyclicShifter.Using.aByteArray(bytes,9);
 //the contents of bytes will be 
 //{0b00000011,0b11000000,0b10001100}                         000000111100000010001100
 ```
-There is also the method ``Bitwise.CyclicShifter.Using.aByteBuffer`` implemented for you as well as a generic constructor ``new CyclicShifter<T>(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex)``
-to easily use whatever kind of byte container you please. This uses bitwise operations itself to achieve this so it runs pretty darn quick.
+There is also the method ``Bitwise.CyclicShifter.Using.aByteBuffer`` implemented for you as well as a generic constructor 
+``new CyclicShifter<T>(ToIntFunction<T> lengthGetter, ObjIntToByteFunction<T> getAtIndex, ObjIntByteConsumer<T> setAtIndex)``
+to easily use whatever kind of byte container you please.
+This uses bitwise operations itself to achieve this so it runs pretty darn quick.
+
+
 Another object you may find useful is a ``CyclicByteBuffer`` which can be used to do operations over arrays smaller or larger than itself. A use of this object can be found in the ``Bitwise.Util.doOperation(byte[],IntBinaryOperator,byte...)`` method.
 
 
